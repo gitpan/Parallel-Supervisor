@@ -9,7 +9,7 @@ use Symbol qw(geniosym);
 use IO::Pipe;
 use IO::Handle;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 sub new # create a new collection of processes
 {
@@ -320,43 +320,43 @@ POE, which provides a full-featured event driven multitasking framework.
 
 instantiate your collection with an empty list of jobs
 
-=head2 prepare
+=head2 prepare($name, $cmd)
 
-Add a job to your collection ($name, $cmd). The job is considered
-"ready" until it is attached or forgotten (see below).
+Add a job to your collection with the given name and command. The job
+is considered "ready" until it is attached or forgotten (see below).
 
 $name can be used for tracking the task - for example 
 Parallel::JobManager can use this identifier in its callbacks.
 
-$command will be invoked by your code - so it can be anything you want
-to execute in a standardized way. Eg, within eval() or system() or using
+$cmd will be invoked by your code - so it can be anything you want to
+ execute in a standardized way. Eg, within eval() or system() or using
 Parallel::Jobs::start_job.
 
 Passing a $name to prepare() which has already been passed will not
 replace the current child (after all, it may be running!), but will
 return undef. See the forget method, below.
 
-=head2 is_ready
+=head2 is_ready($name)
 
 Returns 1 if the command name has been prepared but not yet attached, 
 undef if there is no such name or if the process is running.
 
-=head2 is_attached
+=head2 is_attached($name)
 
 Looks for a running process with the given name and returns the pid if 
 the process has been attached, or undef.
 
-=head2 attach
+=head2 attach($name, $pid)
 
 Associate the given name with the given pid and consider this child to
 be "alive" or running.
 
-=head2 detach
+=head2 detach($pid)
 
 Consider the child with the given pid to no longer be alive - change
 job state from attached to finished.
 
-=head2 forget
+=head2 forget($name)
 
 Delete the child with the given name entirely. This allows a new child
 to be created with a previously-used name, for example. Returns undef
@@ -366,7 +366,7 @@ if the child is attached.
 
 Like calling new all over again: deletes all records.
 
-=head2 get_child
+=head2 get_child($name)
 
 Return hashref to the record for the given name. The record consists
 of:
@@ -395,7 +395,7 @@ their output.
 
 Return a hashref of all the prepared children which have not yet been
 attached. The hash keys are the names of each record (i.e. "id"), while
-the record itself also contains the id field, for consistency.
+the record itself also contains the id (as above), for consistency.
 
 =head2 get_next_ready
 
@@ -403,23 +403,21 @@ The most useful way of iterating through the collection. Returns only
 one record for a ready child (i.e. prepared but not attached). Children
 are sorted according to the system's default sort() behaviour and the 
 first record is returned. This does NOT pop() the record from the 
-collection in any way - you must call attach() for the child and
-provide its pid. Failure to do so while iterating in a while loop will
-continue infinitely.
+collection - you must call attach() for the child and provide its pid.
+Failure to do so while iterating in a while loop will continue
+infinitely.
 
 =back
 
 =head1 CAVEATS
 
-For convenience and mainly for internal use, getter methods are
-to directly see the hashes in which records are stored. In particular,
-the method get_names should not be confused with the getter names. The
-former returns an array, and the latter returns a hash using the pid
-as the keys. In either case, only attached processes are returned.
-
-This module was written for POSIX systems which provide a PID for all 
-running processes. It may or may not make sense to run this module on 
-a Windows system, although it only consists of interpreted Perl code.
+Undocumented getters are defined to directly access the object's data
+structures, but they are mainly for internal use. The methods described
+above should be sufficient for interacting with the module. The method
+names() should not be confused with get_names(). The former returns a
+hash of pid => name pairs, while the latter returns an array of job
+names (aka "id"). In either case, only attached processes are
+returned.
 
 The method get_next_ready() is useful for iterating through the 
 collection, but, unlike a true iterator, it does not traverse elements 
@@ -429,6 +427,10 @@ change, the item must be taken out of the `ready' pool using attach()
 without attaching or forgetting that process could cause an infinite
 loop.
 
+This module was written primarily for POSIX systems. It may run on
+Win32, but has not been tested extensively on that platform. Feedback
+and patches are welcome.
+
 =head1 SEE ALSO
 
 The following may be helpful reading for users of this module, or
@@ -437,6 +439,8 @@ considering doing so:
 =over 4
 
 perldoc perlipc
+
+perldoc perlfork
 
 Parallel::Jobs
 

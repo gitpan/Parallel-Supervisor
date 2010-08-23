@@ -41,7 +41,7 @@ if ($forkpid == 0) {
 }
 # parent process - testing continues
 
-ok($forkpid > 0 , "parent sees fork");
+ok(defined $forkpid , "parent sees fork");
 
 # Test 7: can we attach the child?
 isnt(undef,$P->attach($C{id},$forkpid) , "attach child");
